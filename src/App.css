@@ -1,0 +1,87 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.card {
+  padding: 2em;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  margin-bottom: 2em;
+}
+
+.form-group {
+  margin-bottom: 1.5em;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5em;
+  font-weight: 500;
+}
+
+.form-group input[type="file"] {
+  display: block;
+  width: 100%;
+  padding: 0.5em;
+  border: 1px solid #646cff;
+  border-radius: 4px;
+  background-color: #2a2a2a;
+  color: inherit;
+  cursor: pointer;
+}
+
+.form-group select {
+  width: 100%;
+  padding: 0.5em;
+  border: 1px solid #646cff;
+  border-radius: 4px;
+  background-color: #2a2a2a;
+  color: inherit;
+  font-size: 1em;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: auto;
+  cursor: pointer;
+}
+
+.button-group {
+  display: flex;
+  gap: 1em;
+  justify-content: center;
+  margin-top: 2em;
+}
+
+.preview-area {
+  margin-top: 2em;
+  padding: 1em;
+  border: 1px dashed #646cff;
+  border-radius: 4px;
+  min-height: 100px;
+}
+
+@media (prefers-color-scheme: light) {
+  .card {
+    background-color: #f9f9f9;
+  }
+  .form-group input[type="file"],
+  .form-group select {
+    background-color: #ffffff;
+    border-color: #646cff;
+  }
+}
