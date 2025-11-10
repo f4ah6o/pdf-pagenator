@@ -17,6 +17,7 @@ interface PageNumberOptions {
 
 function PdfPageNumberer() {
   const [file, setFile] = useState<File | null>(null);
+  const [totalPages, setTotalPages] = useState<number | null>(null);
   const [options, setOptions] = useState<PageNumberOptions>({
     position: 'footer',
     alignment: 'center',
@@ -31,13 +32,23 @@ function PdfPageNumberer() {
   const [status, setStatus] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile && selectedFile.type === 'application/pdf') {
       setFile(selectedFile);
       setStatus('');
+      // PDFのページ数を取得
+      try {
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(arrayBuffer);
+        setTotalPages(pdfDoc.getPages().length);
+      } catch (error) {
+        console.error('Error loading PDF:', error);
+        setTotalPages(null);
+      }
     } else {
       setStatus('PDFファイルを選択してください');
+      setTotalPages(null);
     }
   };
 
@@ -51,7 +62,7 @@ function PdfPageNumberer() {
     setIsDragging(false);
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
 
@@ -59,8 +70,18 @@ function PdfPageNumberer() {
     if (droppedFile && droppedFile.type === 'application/pdf') {
       setFile(droppedFile);
       setStatus('');
+      // PDFのページ数を取得
+      try {
+        const arrayBuffer = await droppedFile.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(arrayBuffer);
+        setTotalPages(pdfDoc.getPages().length);
+      } catch (error) {
+        console.error('Error loading PDF:', error);
+        setTotalPages(null);
+      }
     } else {
       setStatus('PDFファイルをドロップしてください');
+      setTotalPages(null);
     }
   };
 
@@ -229,7 +250,10 @@ function PdfPageNumberer() {
 
       <div className="form-group">
         <div className="toggle-group">
-          <label htmlFor="include-total">総ページ数を含める (例: 1 / 10)</label>
+          <label htmlFor="include-total">
+            総ページ数を含める
+            {totalPages !== null && ` (1 / ${totalPages})`}
+          </label>
           <label className="toggle-switch">
             <input
               id="include-total"
