@@ -10,6 +10,9 @@ interface PageNumberOptions {
   includeTotalPages: boolean;
   startPage: number;
   fontSize: number;
+  skipCoverPages: boolean;
+  coverPagesToSkip: number;
+  includeCoverInTotal: boolean;
 }
 
 function PdfPageNumberer() {
@@ -20,9 +23,13 @@ function PdfPageNumberer() {
     includeTotalPages: true,
     startPage: 1,
     fontSize: 12,
+    skipCoverPages: false,
+    coverPagesToSkip: 1,
+    includeCoverInTotal: true,
   });
   const [processing, setProcessing] = useState(false);
   const [status, setStatus] = useState<string>('');
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -31,6 +38,29 @@ function PdfPageNumberer() {
       setStatus('');
     } else {
       setStatus('PDFファイルを選択してください');
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile && droppedFile.type === 'application/pdf') {
+      setFile(droppedFile);
+      setStatus('');
+    } else {
+      setStatus('PDFファイルをドロップしてください');
     }
   };
 
@@ -59,15 +89,32 @@ function PdfPageNumberer() {
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
       const pages = pdfDoc.getPages();
-      const totalPages = pages.length;
+      const totalPagesInDoc = pages.length;
+
+      // 総ページ数の計算
+      const displayTotalPages =
+        options.skipCoverPages && !options.includeCoverInTotal
+          ? totalPagesInDoc - options.coverPagesToSkip
+          : totalPagesInDoc;
 
       // 各ページにページ番号を追加
-      for (let i = 0; i < totalPages; i++) {
+      for (let i = 0; i < totalPagesInDoc; i++) {
         const page = pages[i];
         const { width, height } = page.getSize();
 
-        const pageNumber = i + options.startPage;
-        const text = options.includeTotalPages ? `${pageNumber} / ${totalPages}` : `${pageNumber}`;
+        // 表紙スキップ機能が有効で、スキップ範囲内の場合はページ番号を描画しない
+        if (options.skipCoverPages && i < options.coverPagesToSkip) {
+          continue;
+        }
+
+        // ページ番号の計算（スキップしたページ分を調整）
+        const pageNumber = options.skipCoverPages
+          ? i - options.coverPagesToSkip + options.startPage
+          : i + options.startPage;
+
+        const text = options.includeTotalPages
+          ? `${pageNumber} / ${displayTotalPages}`
+          : `${pageNumber}`;
 
         const textWidth = font.widthOfTextAtSize(text, options.fontSize);
 
@@ -123,14 +170,34 @@ function PdfPageNumberer() {
     <div className="card">
       <div className="form-group">
         <label htmlFor="pdf-file">PDFファイルを選択</label>
-        <input
-          id="pdf-file"
-          type="file"
-          accept=".pdf"
-          onChange={handleFileChange}
-          disabled={processing}
-        />
-        {file && <p style={{ marginTop: '0.5em' }}>選択: {file.name}</p>}
+        <div
+          className={`dropzone ${isDragging ? 'dragging' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <input
+            id="pdf-file"
+            type="file"
+            accept=".pdf"
+            onChange={handleFileChange}
+            disabled={processing}
+            style={{ display: 'none' }}
+          />
+          <label htmlFor="pdf-file" className="dropzone-label">
+            {file ? (
+              <span>選択: {file.name}</span>
+            ) : (
+              <span>
+                クリックしてファイルを選択
+                <br />
+                または
+                <br />
+                ここにファイルをドロップ
+              </span>
+            )}
+          </label>
+        </div>
       </div>
 
       <div className="form-group">
@@ -161,17 +228,68 @@ function PdfPageNumberer() {
       </div>
 
       <div className="form-group">
-        <div className="checkbox-group">
-          <input
-            id="include-total"
-            type="checkbox"
-            checked={options.includeTotalPages}
-            onChange={(e) => handleOptionChange('includeTotalPages', e.target.checked)}
-            disabled={processing}
-          />
+        <div className="toggle-group">
           <label htmlFor="include-total">総ページ数を含める (例: 1 / 10)</label>
+          <label className="toggle-switch">
+            <input
+              id="include-total"
+              type="checkbox"
+              checked={options.includeTotalPages}
+              onChange={(e) => handleOptionChange('includeTotalPages', e.target.checked)}
+              disabled={processing}
+            />
+            <span className="toggle-slider" />
+          </label>
         </div>
       </div>
+
+      <div className="form-group">
+        <div className="toggle-group">
+          <label htmlFor="skip-cover">表紙の番号記載をスキップ</label>
+          <label className="toggle-switch">
+            <input
+              id="skip-cover"
+              type="checkbox"
+              checked={options.skipCoverPages}
+              onChange={(e) => handleOptionChange('skipCoverPages', e.target.checked)}
+              disabled={processing}
+            />
+            <span className="toggle-slider" />
+          </label>
+        </div>
+      </div>
+
+      {options.skipCoverPages && (
+        <>
+          <div className="form-group">
+            <label htmlFor="cover-pages">スキップするページ数</label>
+            <input
+              id="cover-pages"
+              type="number"
+              min="1"
+              value={options.coverPagesToSkip}
+              onChange={(e) => handleOptionChange('coverPagesToSkip', Number(e.target.value))}
+              disabled={processing}
+            />
+          </div>
+
+          <div className="form-group">
+            <div className="toggle-group">
+              <label htmlFor="include-cover-in-total">スキップしたページを総ページ数に含める</label>
+              <label className="toggle-switch">
+                <input
+                  id="include-cover-in-total"
+                  type="checkbox"
+                  checked={options.includeCoverInTotal}
+                  onChange={(e) => handleOptionChange('includeCoverInTotal', e.target.checked)}
+                  disabled={processing}
+                />
+                <span className="toggle-slider" />
+              </label>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="form-group">
         <label htmlFor="font-size">フォントサイズ</label>
