@@ -7,6 +7,9 @@ type Alignment = 'left' | 'center' | 'right';
 interface PageNumberOptions {
   position: Position;
   alignment: Alignment;
+  oddPageAlignment: Alignment;
+  evenPageAlignment: Alignment;
+  separateOddEvenAlignment: boolean;
   includeTotalPages: boolean;
   startPage: number;
   fontSize: number;
@@ -21,6 +24,9 @@ function PdfPageNumberer() {
   const [options, setOptions] = useState<PageNumberOptions>({
     position: 'footer',
     alignment: 'center',
+    oddPageAlignment: 'left',
+    evenPageAlignment: 'right',
+    separateOddEvenAlignment: false,
     includeTotalPages: true,
     startPage: 1,
     fontSize: 12,
@@ -141,7 +147,18 @@ function PdfPageNumberer() {
 
         // X座標を決定（左・中央・右）
         let x: number;
-        switch (options.alignment) {
+        let currentAlignment: Alignment;
+
+        if (options.separateOddEvenAlignment) {
+          // 奇数/偶数ページ別の寄せを使用
+          const isOddPage = pageNumber % 2 === 1;
+          currentAlignment = isOddPage ? options.oddPageAlignment : options.evenPageAlignment;
+        } else {
+          // 通常の寄せを使用
+          currentAlignment = options.alignment;
+        }
+
+        switch (currentAlignment) {
           case 'left':
             x = 50;
             break;
@@ -235,18 +252,66 @@ function PdfPageNumberer() {
       </div>
 
       <div className="form-group">
-        <label htmlFor="alignment">寄せ</label>
-        <select
-          id="alignment"
-          value={options.alignment}
-          onChange={(e) => handleOptionChange('alignment', e.target.value as Alignment)}
-          disabled={processing}
-        >
-          <option value="left">左</option>
-          <option value="center">中央</option>
-          <option value="right">右</option>
-        </select>
+        <div className="toggle-group">
+          <label htmlFor="separate-odd-even">奇数・偶数ページ別指定</label>
+          <label className="toggle-switch">
+            <input
+              id="separate-odd-even"
+              type="checkbox"
+              checked={options.separateOddEvenAlignment}
+              onChange={(e) => handleOptionChange('separateOddEvenAlignment', e.target.checked)}
+              disabled={processing}
+            />
+            <span className="toggle-slider" />
+          </label>
+        </div>
       </div>
+
+      {!options.separateOddEvenAlignment ? (
+        <div className="form-group">
+          <label htmlFor="alignment">寄せ</label>
+          <select
+            id="alignment"
+            value={options.alignment}
+            onChange={(e) => handleOptionChange('alignment', e.target.value as Alignment)}
+            disabled={processing}
+          >
+            <option value="left">左</option>
+            <option value="center">中央</option>
+            <option value="right">右</option>
+          </select>
+        </div>
+      ) : (
+        <>
+          <div className="form-group">
+            <label htmlFor="odd-alignment">奇数ページの寄せ</label>
+            <select
+              id="odd-alignment"
+              value={options.oddPageAlignment}
+              onChange={(e) => handleOptionChange('oddPageAlignment', e.target.value as Alignment)}
+              disabled={processing}
+            >
+              <option value="left">左</option>
+              <option value="center">中央</option>
+              <option value="right">右</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="even-alignment">偶数ページの寄せ</label>
+            <select
+              id="even-alignment"
+              value={options.evenPageAlignment}
+              onChange={(e) => handleOptionChange('evenPageAlignment', e.target.value as Alignment)}
+              disabled={processing}
+            >
+              <option value="left">左</option>
+              <option value="center">中央</option>
+              <option value="right">右</option>
+            </select>
+          </div>
+        </>
+      )}
 
       <div className="form-group">
         <div className="toggle-group">
