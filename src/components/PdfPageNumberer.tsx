@@ -134,10 +134,9 @@ function PdfPageNumberer() {
           continue;
         }
 
-        // ページ番号の計算（スキップしたページ分を調整）
-        const pageNumber = options.skipCoverPages
-          ? i - options.coverPagesToSkip + options.startPage
-          : i + options.startPage;
+        // ページ番号の計算
+        // スキップしたページもカウントに含めるため、物理ページ位置で計算
+        const pageNumber = i + options.startPage;
 
         const text = options.includeTotalPages
           ? `${pageNumber} / ${displayTotalPages}`
